@@ -83,7 +83,7 @@ fn main() {
         match current_state {
             State::City => {
                 if test_byte[0] == 59 {
-                    current_city.push_str(String::from_utf8(string_buf.clone()).expect("utf-8 err").as_str());
+                    current_city.push_str(String::from_utf8(string_buf.clone()).unwrap().as_str());
                     let m = measures.get_mut(&current_city.clone());
                     match m {
                         None => {
@@ -106,11 +106,11 @@ fn main() {
                 }
 
                 if test_byte[0] == 10 {
-                    let current_measure = measures.get_mut(&current_city.clone()).expect("missing measure");
+                    let current_measure = measures.get_mut(&current_city.clone()).unwrap();
                     current_measure.take_measure(String::from_utf8(string_buf.clone())
-                        .expect("utf-8 format err")
+                        .unwrap()
                         .parse()
-                        .expect("invalid measurement format"));
+                        .unwrap());
                     current_state = State::City;
                     string_buf.clear();
                     current_city.clear();

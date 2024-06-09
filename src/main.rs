@@ -124,6 +124,12 @@ fn process_chunk(start: u64, size: usize, chan: Sender<HashMap<String, Measureme
     let measurements_file = File::open("measurements.txt").expect("file not found");
     let mut reader = BufReader::with_capacity(4*1024, measurements_file);
     reader.seek(SeekFrom::Start(if start > 0 { start - 1 } else { start })).expect("Failed to seek to file");
+    let mut buf = vec![0; size + 50];
+    let test = reader.read(&mut buf);
+    if test.is_err() || test.unwrap() == 0 {
+        panic!("failed to read file");
+    }
+
     let mut string_buf: Vec<u8> = vec![];
     let mut measures: HashMap<String, Measurement> = HashMap::new();
     // let mut measures: Vec<Measurement> = vec![];
@@ -131,30 +137,28 @@ fn process_chunk(start: u64, size: usize, chan: Sender<HashMap<String, Measureme
     let mut read_bytes = 0;
     let mut last_read = false;
 
+    let mut pos: i32 = -1;
+
     loop {
-        let mut test_byte: [u8; 1] = [0; 1];
-        let test = reader.read(&mut test_byte);
-        if test.is_err() {
+        pos = pos + 1;
+        if pos > buf.len() as i32 {
             break;
         }
-        let test_size = test.unwrap();
-        if test_size == 0 {
-            break;
-        }
-        read_bytes = read_bytes + test_size;
+        let test_byte = buf[pos as usize];
+        read_bytes = read_bytes + 1;
         if read_bytes >= size {
             last_read = true;
         }
 
         match current_state {
             State::Init => {
-                if test_byte[0] == 10 {
+                if test_byte == 10 {
                     current_state = State::City;
                 }
                 continue;
             }
             State::City => {
-                if test_byte[0] == 59 {
+                if test_byte == 59 {
                     let city_str = String::from_utf8(string_buf.clone()).unwrap();
                     if !measures.contains_key(&city_str) {
                         measures
@@ -165,15 +169,15 @@ fn process_chunk(start: u64, size: usize, chan: Sender<HashMap<String, Measureme
                     continue;
                 }
 
-                string_buf.push(test_byte[0]);
+                string_buf.push(test_byte);
             }
             State::Temp(ref city_str) => {
                 // check for space
-                if test_byte[0] == 32 || test_byte[0] == 46 {
+                if test_byte == 32 || test_byte == 46 {
                     continue;
                 }
 
-                if test_byte[0] == 10 {
+                if test_byte == 10 {
                     let current_measure = measures.get_mut(city_str).unwrap();
                     current_measure.take_measure(String::from_utf8(string_buf.clone())
                         .unwrap()
@@ -184,7 +188,7 @@ fn process_chunk(start: u64, size: usize, chan: Sender<HashMap<String, Measureme
                     continue;
                 }
 
-                string_buf.push(test_byte[0]);
+                string_buf.push(test_byte);
             }
             State::End => break
         }

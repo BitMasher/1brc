@@ -62,17 +62,16 @@ impl Display for Measurement {
 
 enum State {
     City,
-    Temp,
+    Temp(String),
 }
 
 fn main() {
     let measurements_file = File::open("measurements.txt").expect("file not found");
-    let mut reader = BufReader::new(measurements_file);
+    let mut reader = BufReader::with_capacity(4*1024, measurements_file);
     let mut string_buf: Vec<u8> = vec![];
     let mut measures: HashMap<String, Measurement> = HashMap::new();
     // let mut measures: Vec<Measurement> = vec![];
     let mut current_state: State = State::City;
-    let mut current_city: String = Default::default();
     loop {
         let mut test_byte: [u8; 1] = [0; 1];
         let test = reader.read(&mut test_byte);
@@ -83,37 +82,32 @@ fn main() {
         match current_state {
             State::City => {
                 if test_byte[0] == 59 {
-                    current_city.push_str(String::from_utf8(string_buf.clone()).unwrap().as_str());
-                    let m = measures.get_mut(&current_city.clone());
-                    match m {
-                        None => {
-                            measures
-                                .insert(current_city.clone(), Measurement::new(current_city.clone()));
-                        }
-                        _ => {}
+                    let city_str = String::from_utf8(string_buf.clone()).unwrap();
+                    if !measures.contains_key(&city_str) {
+                        measures
+                            .insert(city_str.clone(), Measurement::new(city_str.clone()));
                     }
                     string_buf.clear();
-                    current_state = State::Temp;
+                    current_state = State::Temp(city_str);
                     continue;
                 }
 
                 string_buf.push(test_byte[0]);
             }
-            State::Temp => {
+            State::Temp(ref city_str) => {
                 // check for space
                 if test_byte[0] == 32 || test_byte[0] == 46 {
                     continue;
                 }
 
                 if test_byte[0] == 10 {
-                    let current_measure = measures.get_mut(&current_city.clone()).unwrap();
+                    let current_measure = measures.get_mut(city_str).unwrap();
                     current_measure.take_measure(String::from_utf8(string_buf.clone())
                         .unwrap()
                         .parse()
                         .unwrap());
                     current_state = State::City;
                     string_buf.clear();
-                    current_city.clear();
                     continue;
                 }
 

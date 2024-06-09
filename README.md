@@ -1,3 +1,5 @@
-| attempt | time                 | machine             | notes                                   |
-|---------|----------------------|---------------------|-----------------------------------------|
-| 1       | 156.552 s ±  0.769 s | Mac Studio m2 Ultra | initial implementation, single threaded |
+| attempt | time                 | machine             | notes                                                                                                             |
+|---------|----------------------|---------------------|-------------------------------------------------------------------------------------------------------------------|
+| 1       | 156.552 s ±  0.769 s | Mac Studio m2 Ultra | initial implementation, single threaded                                                                           |
+| 2       | 151                  | Mac Studio m2 Ultra | removed all the safety tests                                                                                      |
+| 3       | 115.677 s ±  0.818 s | Mac Studio m2 Ultra | Set reader capacity to 4k, got rid of excess copies, switched to enum pattern matching instead of global city var |

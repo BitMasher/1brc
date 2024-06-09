@@ -6,3 +6,4 @@
 | 4       | 8.111 s ±  0.311 s   | Mac Studio m2 Ultra | Multi-threaded (cores * 2), ramdisk                                                                               |
 | 5       | 7.741 s ±  0.250 s   | Mac Studio m2 Ultra | Read entire file segment at once                                                                                  |
 | 6       | 6.851 s ±  0.226 s   | Mac Studio m2 Ultra | removed a vector copy on city name                                                                                |
+| 7       | 6.506 s ±  0.158 s   | Mac Studio m2 Ultra | switch hashing function for hashmap and changed key from string to [u8]                                           |

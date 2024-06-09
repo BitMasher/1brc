@@ -75,7 +75,7 @@ impl Display for Measurement {
 
 enum State {
     Init,
-    City,
+    City(usize),
     Temp(String),
     End
 }
@@ -133,7 +133,7 @@ fn process_chunk(start: u64, size: usize, chan: Sender<HashMap<String, Measureme
     let mut string_buf: Vec<u8> = vec![];
     let mut measures: HashMap<String, Measurement> = HashMap::new();
     // let mut measures: Vec<Measurement> = vec![];
-    let mut current_state: State = if start == 0 { State::City } else { State::Init };
+    let mut current_state: State = if start == 0 { State::City(0) } else { State::Init };
     let mut read_bytes = 0;
     let mut last_read = false;
 
@@ -153,27 +153,24 @@ fn process_chunk(start: u64, size: usize, chan: Sender<HashMap<String, Measureme
         match current_state {
             State::Init => {
                 if test_byte == 10 {
-                    current_state = State::City;
+                    current_state = State::City(pos as usize + 1);
                 }
                 continue;
             }
-            State::City => {
+            State::City(c_start) => {
                 if test_byte == 59 {
-                    let city_str = String::from_utf8(string_buf.clone()).unwrap();
+                    let city_str = String::from_utf8(buf[c_start..(pos as usize)].to_vec()).unwrap();
                     if !measures.contains_key(&city_str) {
                         measures
                             .insert(city_str.clone(), Measurement::new(city_str.clone()));
                     }
-                    string_buf.clear();
                     current_state = State::Temp(city_str);
                     continue;
                 }
-
-                string_buf.push(test_byte);
             }
             State::Temp(ref city_str) => {
                 // check for space
-                if test_byte == 32 || test_byte == 46 {
+                if test_byte == 46 {
                     continue;
                 }
 
@@ -183,7 +180,7 @@ fn process_chunk(start: u64, size: usize, chan: Sender<HashMap<String, Measureme
                         .unwrap()
                         .parse()
                         .unwrap());
-                    current_state = if last_read { State::End } else { State::City };
+                    current_state = if last_read { State::End } else { State::City(pos as usize +1) };
                     string_buf.clear();
                     continue;
                 }
